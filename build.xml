@@ -1,0 +1,112 @@
+<project name="jmorphy2-solr-stemmer" basedir="." default="main">
+
+    <property name="version" value="0.1"/>
+
+    <property environment="env"/>
+
+    <condition property="solr.proj.dir" value="${env.SOLR_PROJ}" else="../lucene-solr">
+        <isset property="env.SOLR_PROJ"/>
+    </condition>
+    <echo message="Used solr project directory: ${solr.proj.dir}"/>
+    <echo message="You can reset solr project directory with SOLR_PROJ environment variable"/>
+    
+    <property name="solr.lib.dir"
+              value="${solr.proj.dir}/solr/example/solr-webapp/webapp/WEB-INF/lib"/>
+    <echo message="Used solr lib directory: ${solr.lib.dir}"/>
+
+    <property name="src.dir" value="src/java"/>
+
+    <property name="build.dir" value="build"/>
+    <property name="classes.dir" value="${build.dir}/classes"/>
+    <property name="jar.dir" value="${build.dir}/jar"/>
+
+    <property name="test.src.dir" value="src/test"/>
+    <property name="test.classes.dir" value="${build.dir}/test/classes"/>
+    <property name="test.jar.dir" value="${build.dir}/test/jar"/>
+
+    <property name="main-test-class" value="com.uaprom.stemmer.DictionaryStemFilterFactoryTest"/>
+
+    <property name="lib.dir"     value="lib"/>
+
+    <property name="solr.home" value="solr"/>
+    
+
+    <path id="sourcepath">
+        <fileset dir="${src.dir}">
+            <include name="**/*.java"/>
+        </fileset>
+    </path>
+    
+    <path id="classpath">
+        <fileset dir="${solr.lib.dir}" includes="**/*.jar"/>
+        <fileset dir="${lib.dir}" includes="**/*.jar"/>
+    </path>
+
+    <path id="test.classpath">
+        <path refid="classpath"/>
+        <fileset dir="${jar.dir}" includes="**/*.jar"/>
+    </path>
+
+
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+        <delete dir="${jar.dir}"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="${classes.dir}"/>
+        <property name="sourcepath" refid="sourcepath"/> 
+        <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" debug="true">
+            <include name="**/*.java"/>
+            <exclude name="com/uaprom/stemmer/sqlite/*.java"/>
+        </javac>
+    </target>
+
+    <target name="jar" depends="compile">
+        <mkdir dir="${jar.dir}"/>
+        <jar destfile="${jar.dir}/${ant.project.name}-${version}.jar" basedir="${classes.dir}">
+            <!--
+            <manifest>
+                <attribute name="Main-Class" value="${main-class}"/>
+            </manifest>
+            -->
+        </jar>
+    </target>
+
+    <target name="compile-test" depends="jar">
+        <mkdir dir="${test.classes.dir}"/>
+        <javac srcdir="${test.src.dir}" destdir="${test.classes.dir}" classpathref="test.classpath" debug="true"/>
+    </target>
+
+    <target name="jar-test" depends="compile-test">
+        <mkdir dir="${test.jar.dir}"/>
+        <jar destfile="${test.jar.dir}/${ant.project.name}.jar" basedir="${test.classes.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="${main-test-class}"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="test" depends="jar-test">
+        <java fork="true" classname="${main-test-class}">
+            <jvmarg line="-Xdebug"/>
+            <jvmarg line="-Djava.util.logging.config.file=logging.properties"/>
+            <jvmarg line="-Dsolr.solr.home=${solr.home}"/>
+            <classpath>
+                <path refid="test.classpath"/>
+                <path location="${test.jar.dir}/${ant.project.name}.jar"/>
+            </classpath>
+        </java>
+    </target>
+
+    <!--
+    <target name="run" depends="jar">
+        <java jar="${jar.dir}/${ant.project.name}.jar" fork="true"/>
+    </target>
+    -->
+
+    <target name="clean-build" depends="clean,jar"/>
+
+    <target name="main" depends="clean,test"/>
+
+</project>
