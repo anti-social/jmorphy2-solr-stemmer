@@ -1,6 +1,14 @@
 *.class
 
+# Emacs files #
+*~
+\#*#
+.ropeproject/
+
 # Package Files #
 *.jar
 *.war
 *.ear
+
+build/
+solr/conf/dict/
