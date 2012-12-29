@@ -29,8 +29,7 @@ Compile dictionary
 ------------------
 
 ```sh
-pip install 
-cd pymorphy2
+pip install https://github.com/kmike/pymorphy2/archive/master.zip
 pymorphy dict download_xml db.opencorpora.xml
 # next command takes time and almost 4Gb memory
 pymorphy dict compile db.opencorpora.xml
