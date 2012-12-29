@@ -43,7 +43,6 @@ Schema example
 ```xml
 <fieldType name="text" class="solr.TextField" omitNorms="true">
   <analyzer>
-    <charFilter class="solr.MappingCharFilterFactory" mapping="mapping_ru.txt"/>
     <charFilter class="solr.HTMLStripCharFilterFactory"/>
     <tokenizer class="solr.WhitespaceTokenizerFactory"/>
     <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
