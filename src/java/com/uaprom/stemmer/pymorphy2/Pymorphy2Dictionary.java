@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.ArrayList;
 
@@ -30,7 +31,8 @@ public class Pymorphy2Dictionary extends Dictionary {
     private ArrayList<Paradigm> paradigms;
     private String[] suffixes;
     private String[] lemmaPrefixes;
-    
+    private HashMap<Character,Character> replaceChars;
+
     private static final String WORDS_FILENAME = "words.dawg";
     private static final String PARADIGMS_FILENAME = "paradigms.array";
     private static final String SUFFIXES_FILENAME = "suffixes.json";
@@ -48,6 +50,10 @@ public class Pymorphy2Dictionary extends Dictionary {
         loadParadigms(new File(dbPath, PARADIGMS_FILENAME));
         loadSuffixes(new File(dbPath, SUFFIXES_FILENAME));
         loadLemmaPrefixes(new File(dbPath, LEMMA_PREFIXES_FILENAME));
+
+        // TODO: move into file, maybe json
+        replaceChars = new HashMap<Character,Character>();
+        replaceChars.put('е', 'ё');
     }
 
     private void loadParadigms(File file) throws IOException {
@@ -88,12 +94,13 @@ public class Pymorphy2Dictionary extends Dictionary {
         ArrayList<String> normalForms = new ArrayList<String>();
         String w = new String(word, offset, count);
 
-        ArrayList<FoundParadigm> paradigmValues;
-        paradigmValues = dawg.similarItems(w.getBytes("UTF-8"));
-            
+        ArrayList<FoundParadigm> foundParadigms = dawg.similarItems(w, replaceChars);;
+
         HashSet<String> uniqueNormalForms = new HashSet<String>();
-        for (FoundParadigm paradigmValue : paradigmValues) {
-            String nf = buildNormalForm(paradigmValue.paradigmId, paradigmValue.idx, w);
+        for (FoundParadigm foundParadigm : foundParadigms) {
+            String nf = buildNormalForm(foundParadigm.paradigmId,
+                                        foundParadigm.idx,
+                                        foundParadigm.key);
             if (!uniqueNormalForms.contains(nf)) {
                 normalForms.add(nf.toLowerCase());
                 uniqueNormalForms.add(nf);
@@ -144,30 +151,52 @@ public class Pymorphy2Dictionary extends Dictionary {
             guide = new Guide(input);
         }
 
-        public ArrayList<FoundParadigm> similarItems(byte[] key) throws IOException {
-            ArrayList<FoundParadigm> res = new ArrayList<FoundParadigm>();
-            int index = 0;
+        private ArrayList<FoundParadigm> similarItems(String key, Map<Character,Character> replaceChars, String prefix, int index) throws IOException {
+            ArrayList<FoundParadigm> foundParadigms = new ArrayList<FoundParadigm>();
+            int keyLength = key.length();
+            int prefixLength = prefix.length();
             
-            for (int i = 0; i < key.length; i++) {
-                index = dict.followByte(key[i], index);
+            for (int i = prefixLength; i < keyLength; i++) {
+                char c = key.charAt(i);
+
+                if (replaceChars != null) {
+                    Character rep = replaceChars.get(c);
+                    if (rep != null) {
+                        int nextIndex = dict.followBytes(rep.toString().getBytes("UTF-8"), index);
+                        if (nextIndex != -1) {
+                            String nextPrefix = prefix + key.substring(prefixLength, i) + rep;
+                            foundParadigms.addAll(similarItems(key, replaceChars, nextPrefix, nextIndex));
+                        }
+                    }
+                }
+
+                index = dict.followBytes(Character.toString(c).getBytes("UTF-8"), index);
                 if (index == -1) {
-                    return res;
+                    return foundParadigms;
                 }
             }
             
             if (index == -1) {
-                return res;
+                return foundParadigms;
             }
 
             index = dict.followByte(PAYLOAD_SEPARATOR, index);
             if (index == -1) {
-                return res;
+                return foundParadigms;
             }
 
-            return valueForIndex(index);
+            return valueForIndex(index, prefix + key.substring(prefixLength));
         }
 
-        public ArrayList<FoundParadigm> valueForIndex(int index) throws IOException {
+        public ArrayList<FoundParadigm> similarItems(String key, Map<Character,Character> replaceChars) throws IOException {
+            return similarItems(key, replaceChars, "", 0);
+        }
+
+        public ArrayList<FoundParadigm> similarItems(String key) throws IOException {
+            return similarItems(key, null);
+        }
+
+        public ArrayList<FoundParadigm> valueForIndex(int index, String key) throws IOException {
             ArrayList<FoundParadigm> values = new ArrayList<FoundParadigm>();
 
             Completer completer = new Completer(dict, guide);
@@ -181,7 +210,7 @@ public class Pymorphy2Dictionary extends Dictionary {
                 DataInput stream = new DataInputStream(new ByteArrayInputStream(decodedData));
                 short paradigmId = stream.readShort();
                 short idx = stream.readShort();
-                values.add(new FoundParadigm(paradigmId, idx));
+                values.add(new FoundParadigm(paradigmId, idx, key));
             }
 
             return values;
@@ -415,10 +444,12 @@ public class Pymorphy2Dictionary extends Dictionary {
     private class FoundParadigm {
         private short paradigmId;
         private short idx;
+        private String key;
 
-        public FoundParadigm(short paradigmId, short idx) {
+        public FoundParadigm(short paradigmId, short idx, String key) {
             this.paradigmId = paradigmId;
             this.idx = idx;
+            this.key = key;
         }
     };
     
