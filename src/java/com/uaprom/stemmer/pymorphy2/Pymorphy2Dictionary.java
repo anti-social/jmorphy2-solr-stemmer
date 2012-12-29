@@ -29,6 +29,7 @@ public class Pymorphy2Dictionary extends Dictionary {
     private DAWG dawg;
     private ArrayList<Paradigm> paradigms;
     private String[] suffixes;
+    private String[] lemmaPrefixes;
     
     private boolean toUpper = false;
     private boolean toLower = false;
@@ -36,7 +37,7 @@ public class Pymorphy2Dictionary extends Dictionary {
     private static final String WORDS_FILENAME = "words.dawg";
     private static final String PARADIGMS_FILENAME = "paradigms.array";
     private static final String SUFFIXES_FILENAME = "suffixes.json";
-    private static final String[] LEMMA_PREFIXES = {"", "ПО", "НАИ"};
+    private static final String LEMMA_PREFIXES_FILENAME = "lemma-prefixes.json";
 
     public Pymorphy2Dictionary(Map<String,String> args, String baseDir) throws IOException {
         // logger.info("Pymorphy2Dictionary::Pymorphy2Dictionary");
@@ -68,6 +69,7 @@ public class Pymorphy2Dictionary extends Dictionary {
 
         loadParadigms(new File(dbPath, PARADIGMS_FILENAME));
         loadSuffixes(new File(dbPath, SUFFIXES_FILENAME));
+        loadLemmaPrefixes(new File(dbPath, LEMMA_PREFIXES_FILENAME));
     }
 
     private void loadParadigms(File file) throws IOException {
@@ -80,22 +82,31 @@ public class Pymorphy2Dictionary extends Dictionary {
         }
         // paradigms = new short[paradigmsCount];
     }
-    
-    private void loadSuffixes(File file) throws IOException {
-        JSONParser parser = new JSONParser(new FileReader(file));
-        ArrayList<String> parsedSuffixes = new ArrayList<String>();
 
+    private String[] readJsonStrings(File file) throws IOException {
+        ArrayList<String> stringList = new ArrayList<String>();
+        String[] stringArray;
+
+        JSONParser parser = new JSONParser(new FileReader(file));
         int event;
         while ((event = parser.nextEvent()) != JSONParser.EOF) {
             if (event == JSONParser.STRING) {
-                parsedSuffixes.add(parser.getString());
+                stringList.add(parser.getString());
             }
         }
         
-        suffixes = new String[parsedSuffixes.size()];
-        suffixes = parsedSuffixes.toArray(suffixes);
+        stringArray = new String[stringList.size()];
+        return stringList.toArray(stringArray);
     }
-    
+
+    private void loadSuffixes(File file) throws IOException {
+        suffixes = readJsonStrings(file);
+    }
+
+    private void loadLemmaPrefixes(File file) throws IOException {
+        lemmaPrefixes = readJsonStrings(file);
+    }
+
     @Override
     public ArrayList<String> getNormalForms(char[] word, int offset, int count) throws IOException {
         ArrayList<String> normalForms = new ArrayList<String>();
@@ -135,7 +146,7 @@ public class Pymorphy2Dictionary extends Dictionary {
         int prefixId = paradigm.paradigm[paradigmLength * 2 + 0] & 0xFFFF;
         int suffixId = paradigm.paradigm[0] & 0xFFFF;
 
-        String prefix = LEMMA_PREFIXES[prefixId];
+        String prefix = lemmaPrefixes[prefixId];
         String suffix = suffixes[suffixId];
         
         return prefix + stem + suffix;
@@ -149,7 +160,7 @@ public class Pymorphy2Dictionary extends Dictionary {
 
         int prefixId = paradigm[paradigmLength * 2 + idx] & 0xFFFF;
         // logger.info(prefixId);
-        String prefix = LEMMA_PREFIXES[prefixId];
+        String prefix = lemmaPrefixes[prefixId];
         // logger.info(prefix);
 
         int suffixId = paradigm[idx] & 0xFFFF;
