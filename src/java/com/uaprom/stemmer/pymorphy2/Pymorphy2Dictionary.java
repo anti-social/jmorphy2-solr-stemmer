@@ -37,8 +37,6 @@ public class Pymorphy2Dictionary extends Dictionary {
     private static final String LEMMA_PREFIXES_FILENAME = "lemma-prefixes.json";
 
     public Pymorphy2Dictionary(Map<String,String> args, String baseDir) throws IOException {
-        // logger.info("Pymorphy2Dictionary::Pymorphy2Dictionary");
-        
         String dbPath = args.get("pymorphy2DBPath");
         if (dbPath == null) {
             dbPath = "dict";
@@ -56,11 +54,9 @@ public class Pymorphy2Dictionary extends Dictionary {
         DataInput paradigmsStream = new SwappedDataInputStream(new FileInputStream(file));
         short paradigmsCount = paradigmsStream.readShort();
         paradigms = new ArrayList<Paradigm>(paradigmsCount);
-        // logger.info(paradigmsCount);
         for (int paraId = 0; paraId < paradigmsCount; paraId++) {
             paradigms.add(new Paradigm(paradigmsStream));
         }
-        // paradigms = new short[paradigmsCount];
     }
 
     private String[] readJsonStrings(File file) throws IOException {
@@ -108,13 +104,9 @@ public class Pymorphy2Dictionary extends Dictionary {
     }
 
     protected String buildNormalForm(short paradigmId, short idx, String word) {
-        // logger.info("Pymorphy2Dictionary::buildNormalForm");
-        // logger.info(idx);
-
         Paradigm paradigm = paradigms.get(paradigmId);
         int paradigmLength = paradigm.paradigm.length / 3;
         String stem = buildStem(paradigm.paradigm, idx, word);
-        // logger.info(stem);
 
         int prefixId = paradigm.paradigm[paradigmLength * 2 + 0] & 0xFFFF;
         int suffixId = paradigm.paradigm[0] & 0xFFFF;
@@ -126,20 +118,11 @@ public class Pymorphy2Dictionary extends Dictionary {
     }
 
     protected String buildStem(short[] paradigm, short idx, String word) {
-        // logger.info("Pymorphy2Dictionary::buildStem");
-
         int paradigmLength = paradigm.length / 3;
-        // logger.info(paradigmLength);
-
         int prefixId = paradigm[paradigmLength * 2 + idx] & 0xFFFF;
-        // logger.info(prefixId);
         String prefix = lemmaPrefixes[prefixId];
-        // logger.info(prefix);
-
         int suffixId = paradigm[idx] & 0xFFFF;
-        // logger.info(suffixId);
         String suffix = suffixes[suffixId];
-        // logger.info(suffix);
 
         if (!suffix.equals("")) {
             return word.substring(prefix.length(), word.length() - suffix.length());
@@ -162,8 +145,6 @@ public class Pymorphy2Dictionary extends Dictionary {
         }
 
         public ArrayList<FoundParadigm> similarItems(byte[] key) throws IOException {
-            // logger.info("DAWG::similarItems");
-            
             ArrayList<FoundParadigm> res = new ArrayList<FoundParadigm>();
             int index = 0;
             
@@ -172,17 +153,13 @@ public class Pymorphy2Dictionary extends Dictionary {
                 if (index == -1) {
                     return res;
                 }
-                // logger.info(index);
             }
             
-            // logger.info(">>>");
-            // logger.info(index);
             if (index == -1) {
                 return res;
             }
 
             index = dict.followByte(PAYLOAD_SEPARATOR, index);
-            // logger.info(index);
             if (index == -1) {
                 return res;
             }
@@ -191,25 +168,15 @@ public class Pymorphy2Dictionary extends Dictionary {
         }
 
         public ArrayList<FoundParadigm> valueForIndex(int index) throws IOException {
-            // logger.info("DAWG::valueForIndex");
             ArrayList<FoundParadigm> values = new ArrayList<FoundParadigm>();
 
             Completer completer = new Completer(dict, guide);
             
             completer.start(index);
             while (completer.next()) {
-                // ArrayList<Byte> data = completer.getKey();
                 byte[] encodedData = completer.getKey();
-                // logger.info(encodedData);
-                
-                // byte[] encodedBytes = new byte[data.size()];
-                // for (int i = 0; i < data.size(); i++) {
-                //     encodedBytes[i] = data.get(i);
-                // }
                 Base64 base64 = new Base64();
                 byte[] decodedData = base64.decodeBase64(encodedData);
-                // logger.info(decodedData);
-                // logger.info(decodedData.length);
 
                 DataInput stream = new DataInputStream(new ByteArrayInputStream(decodedData));
                 short paradigmId = stream.readShort();
@@ -233,10 +200,7 @@ public class Pymorphy2Dictionary extends Dictionary {
         private int[] units;
 
         public DAWGDict(DataInput input) throws IOException {
-            // logger.info("DAWGDict::DAWGDict");
-            
             int size = input.readInt();
-            // logger.info(size);
             units = new int[size];
             for (int i = 0; i < size; i++) {
                 units[i] = input.readInt();
@@ -299,10 +263,7 @@ public class Pymorphy2Dictionary extends Dictionary {
         private byte[] units;
         
         public Guide(DataInput input) throws IOException {
-            // logger.info("Guide::Guide");
-            
             int baseSize = input.readInt();
-            // logger.info(baseSize);
 
             int size = baseSize * 2;
             units = new byte[size];
@@ -390,8 +351,6 @@ public class Pymorphy2Dictionary extends Dictionary {
         }
 
         public byte[] getKey() {
-            // logger.info("Completer::getKey - {}", keyLength);
-            
             byte[] newKey = new byte[keyLength];
             System.arraycopy(key, 0, newKey, 0, keyLength);
             return newKey;
