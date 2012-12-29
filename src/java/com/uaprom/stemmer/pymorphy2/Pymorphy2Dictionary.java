@@ -31,9 +31,6 @@ public class Pymorphy2Dictionary extends Dictionary {
     private String[] suffixes;
     private String[] lemmaPrefixes;
     
-    private boolean toUpper = false;
-    private boolean toLower = false;
-    
     private static final String WORDS_FILENAME = "words.dawg";
     private static final String PARADIGMS_FILENAME = "paradigms.array";
     private static final String SUFFIXES_FILENAME = "suffixes.json";
@@ -47,23 +44,6 @@ public class Pymorphy2Dictionary extends Dictionary {
             dbPath = "dict";
         }
         dbPath = baseDir + dbPath;
-        
-        String dbCase = args.get("pymorphy2DBCase");
-        if (dbCase == null) {
-            dbCase = "upper";
-        }
-        String ignoreCase = args.get("pymorphy2IgnoreCase");
-        if (ignoreCase == null) {
-            ignoreCase = "true";
-        }
-        if (ignoreCase.equals("true")) {
-            if (dbCase.equals("upper")) {
-                toUpper = true;
-            }
-            else if (dbCase.equals("lower")) {
-                toLower = true;
-            }
-        }
         
         dawg = new DAWG(new File(dbPath, WORDS_FILENAME));
 
@@ -111,13 +91,6 @@ public class Pymorphy2Dictionary extends Dictionary {
     public ArrayList<String> getNormalForms(char[] word, int offset, int count) throws IOException {
         ArrayList<String> normalForms = new ArrayList<String>();
         String w = new String(word, offset, count);
-        if (toUpper) {
-            w = w.toUpperCase();
-        }
-        else if (toLower) {
-            w = w.toLowerCase();
-        }
-        // logger.info(w);
 
         ArrayList<FoundParadigm> paradigmValues;
         paradigmValues = dawg.similarItems(w.getBytes("UTF-8"));
