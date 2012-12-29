@@ -10,9 +10,14 @@
     <echo message="Used solr project directory: ${solr.proj.dir}"/>
     <echo message="You can reset solr project directory with SOLR_PROJ environment variable"/>
     
-    <property name="solr.lib.dir"
-              value="${solr.proj.dir}/solr/example/solr-webapp/webapp/WEB-INF/lib"/>
-    <echo message="Used solr lib directory: ${solr.lib.dir}"/>
+    <property name="lucene.lib.dir"
+              value="${solr.proj.dir}/solr/build/lucene-libs"/>
+    <property name="solrj.lib.dir"
+              value="${solr.proj.dir}/solr/dist/solrj-lib"/>
+    <property name="solr.core.lib.dir"
+              value="${solr.proj.dir}/solr/core/lib"/>
+    <property name="solr.dist.lib.dir"
+              value="${solr.proj.dir}/solr/dist"/>
 
     <property name="src.dir" value="src/java"/>
 
@@ -24,6 +29,7 @@
     <property name="test.src.dir" value="src/test"/>
     <property name="test.classes.dir" value="${build.dir}/test/classes"/>
     <property name="test.jar.dir" value="${build.dir}/test/jar"/>
+    <property name="test.jar.file" value="${test.jar.dir}/${ant.project.name}-test-${version}.jar"/>
 
     <property name="main-test-class" value="com.uaprom.stemmer.DictionaryStemFilterFactoryTest"/>
 
@@ -39,13 +45,17 @@
     </path>
     
     <path id="classpath">
-        <fileset dir="${solr.lib.dir}" includes="**/*.jar"/>
-        <fileset dir="${lib.dir}" includes="**/*.jar"/>
+        <fileset dir="${lucene.lib.dir}" includes="*.jar"/>
+        <fileset dir="${solrj.lib.dir}" includes="*.jar"/>
+        <fileset dir="${solr.core.lib.dir}" includes="*.jar"/>
+        <fileset dir="${solr.dist.lib.dir}" includes="*.jar"/>
+        
+        <fileset dir="${lib.dir}" includes="*.jar"/>
     </path>
 
     <path id="test.classpath">
         <path refid="classpath"/>
-        <fileset dir="${jar.dir}" includes="**/*.jar"/>
+        <fileset dir="${jar.dir}" includes="*.jar"/>
     </path>
 
 
@@ -76,7 +86,7 @@
 
     <target name="jar-test" depends="compile-test">
         <mkdir dir="${test.jar.dir}"/>
-        <jar destfile="${test.jar.dir}/${ant.project.name}.jar" basedir="${test.classes.dir}">
+        <jar destfile="${test.jar.file}" basedir="${test.classes.dir}">
             <manifest>
                 <attribute name="Main-Class" value="${main-test-class}"/>
             </manifest>
@@ -90,7 +100,7 @@
             <jvmarg line="-Dsolr.solr.home=${solr.home}"/>
             <classpath>
                 <path refid="test.classpath"/>
-                <path location="${test.jar.dir}/${ant.project.name}.jar"/>
+                <path location="${test.jar.file}"/>
             </classpath>
         </java>
     </target>
