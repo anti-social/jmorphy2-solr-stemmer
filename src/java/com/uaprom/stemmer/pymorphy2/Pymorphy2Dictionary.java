@@ -33,6 +33,8 @@ public class Pymorphy2Dictionary extends Dictionary {
     private String[] lemmaPrefixes;
     private HashMap<Character,String> replaceChars;
 
+    // TODO: load metadata
+    private static final String META_FILENAME = "meta.json";
     private static final String WORDS_FILENAME = "words.dawg";
     private static final String PARADIGMS_FILENAME = "paradigms.array";
     private static final String SUFFIXES_FILENAME = "suffixes.json";
