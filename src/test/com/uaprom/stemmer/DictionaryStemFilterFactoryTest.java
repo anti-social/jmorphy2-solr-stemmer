@@ -45,6 +45,7 @@ public class DictionaryStemFilterFactoryTest {
 
         params.put("dictionaryClass", "com.uaprom.stemmer.pymorphy2.Pymorphy2Dictionary");
         params.put("pymorphy2DBPath", "dict");
+        params.put("pymorphy2Replaces", "replaces.json");
         filterFactory.setLuceneMatchVersion(Version.LUCENE_40);
         filterFactory.init(params);
         filterFactory.inform(loader);

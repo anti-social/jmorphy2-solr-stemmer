@@ -31,7 +31,7 @@ public class Pymorphy2Dictionary extends Dictionary {
     private ArrayList<Paradigm> paradigms;
     private String[] suffixes;
     private String[] lemmaPrefixes;
-    private HashMap<Character,Character> replaceChars;
+    private HashMap<Character,String> replaceChars;
 
     private static final String WORDS_FILENAME = "words.dawg";
     private static final String PARADIGMS_FILENAME = "paradigms.array";
@@ -51,9 +51,10 @@ public class Pymorphy2Dictionary extends Dictionary {
         loadSuffixes(new File(dbPath, SUFFIXES_FILENAME));
         loadLemmaPrefixes(new File(dbPath, LEMMA_PREFIXES_FILENAME));
 
-        // TODO: move into file, maybe json
-        replaceChars = new HashMap<Character,Character>();
-        replaceChars.put('е', 'ё');
+        String replacesFilename = args.get("pymorphy2Replaces");
+        if (replacesFilename != null) {
+            loadReplaceChars(new File(baseDir, replacesFilename));
+        }
     }
 
     private void loadParadigms(File file) throws IOException {
@@ -87,6 +88,28 @@ public class Pymorphy2Dictionary extends Dictionary {
 
     private void loadLemmaPrefixes(File file) throws IOException {
         lemmaPrefixes = readJsonStrings(file);
+    }
+
+    private void loadReplaceChars(File file) throws IOException {
+        int i = 0;
+        Character c = null;
+        for (String letter : readJsonStrings(file)) {
+            if (i % 2 == 0) {
+                if (letter.length() != 1) {
+                    throw new IOException(String.format("Replaceable string must contain only one character: '%s'", letter));
+                }
+
+                c = letter.charAt(0);
+            }
+            else {
+                if (replaceChars == null) {
+                    replaceChars = new HashMap<Character,String>();
+                }
+                replaceChars.put(c, letter);
+            }
+
+            i++;
+        }
     }
 
     @Override
@@ -151,7 +174,7 @@ public class Pymorphy2Dictionary extends Dictionary {
             guide = new Guide(input);
         }
 
-        private ArrayList<FoundParadigm> similarItems(String key, Map<Character,Character> replaceChars, String prefix, int index) throws IOException {
+        private ArrayList<FoundParadigm> similarItems(String key, Map<Character,String> replaceChars, String prefix, int index) throws IOException {
             ArrayList<FoundParadigm> foundParadigms = new ArrayList<FoundParadigm>();
             int keyLength = key.length();
             int prefixLength = prefix.length();
@@ -160,12 +183,16 @@ public class Pymorphy2Dictionary extends Dictionary {
                 char c = key.charAt(i);
 
                 if (replaceChars != null) {
-                    Character rep = replaceChars.get(c);
-                    if (rep != null) {
-                        int nextIndex = dict.followBytes(rep.toString().getBytes("UTF-8"), index);
-                        if (nextIndex != -1) {
-                            String nextPrefix = prefix + key.substring(prefixLength, i) + rep;
-                            foundParadigms.addAll(similarItems(key, replaceChars, nextPrefix, nextIndex));
+                    String replaces = replaceChars.get(c);
+                    if (replaces != null) {
+                        int replacesLength = replaces.length();
+                        for (int j = 0; j < replacesLength; j++) {
+                            String r = replaces.substring(j, j + 1);
+                            int nextIndex = dict.followBytes(r.getBytes("UTF-8"), index);
+                            if (nextIndex != -1) {
+                                String nextPrefix = prefix + key.substring(prefixLength, i) + r;
+                                foundParadigms.addAll(similarItems(key, replaceChars, nextPrefix, nextIndex));
+                            }
                         }
                     }
                 }
@@ -188,7 +215,7 @@ public class Pymorphy2Dictionary extends Dictionary {
             return valueForIndex(index, prefix + key.substring(prefixLength));
         }
 
-        public ArrayList<FoundParadigm> similarItems(String key, Map<Character,Character> replaceChars) throws IOException {
+        public ArrayList<FoundParadigm> similarItems(String key, Map<Character,String> replaceChars) throws IOException {
             return similarItems(key, replaceChars, "", 0);
         }
 
