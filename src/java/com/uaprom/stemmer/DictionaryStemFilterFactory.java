@@ -28,16 +28,9 @@ public class DictionaryStemFilterFactory extends TokenFilterFactory implements R
             dictionaryClassPath = DEFAULT_DICTIONARY_CLASSPATH;
         }
 
-        Class<? extends Dictionary> dictionaryClass = ((SolrResourceLoader)loader).findClass(dictionaryClassPath, Dictionary.class);
-        String configDir = ((SolrResourceLoader)loader).getConfigDir();        
-        try {
-            dictionary = (Dictionary)dictionaryClass.getDeclaredConstructor(Map.class, String.class).newInstance(args, configDir);
-        }
-        catch (Exception e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                                    String.format("Error instantiating class: '%s'", dictionaryClassPath),
-                                    e);
-        }
+        String configDir = ((SolrResourceLoader)loader).getConfigDir();
+        dictionary = ((SolrResourceLoader)loader).newInstance(dictionaryClassPath, Dictionary.class);
+        dictionary.init(args, configDir);
         
         if (dictionary == null) {
             throw new IllegalArgumentException(String.format("Cannot find '%s' dictionary class", dictionaryClassPath));

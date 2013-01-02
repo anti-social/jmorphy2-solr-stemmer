@@ -38,7 +38,8 @@ public class Pymorphy2Dictionary extends Dictionary {
     private static final String SUFFIXES_FILENAME = "suffixes.json";
     private static final String LEMMA_PREFIXES_FILENAME = "lemma-prefixes.json";
 
-    public Pymorphy2Dictionary(Map<String,String> args, String baseDir) throws IOException {
+    @Override
+    public void init(Map<String,String> args, String baseDir) throws IOException {
         String dbPath = args.get("pymorphy2DBPath");
         if (dbPath == null) {
             dbPath = "dict";
