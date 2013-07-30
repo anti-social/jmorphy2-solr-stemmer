@@ -14,31 +14,26 @@ import org.apache.solr.common.SolrException;
 
 public class DictionaryStemFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
     private Dictionary dictionary = null;
-    private boolean omitNumbers = true;
+    private boolean omitNumbers;
+    private String dictionaryClassPath;
 
     private static final String DEFAULT_DICTIONARY_CLASSPATH =
         "com.uaprom.stemmer.pymorphy2.Pymorphy2Dictionary";
-    
-    public void inform(ResourceLoader loader) throws IOException {
-        assureMatchVersion();
-            
-        String dictionaryClassPath = args.get("dictionaryClass");
-        if (dictionaryClassPath == null) {
-            // throw new IllegalArgumentException("You must specify type of a dictionary");
-            dictionaryClassPath = DEFAULT_DICTIONARY_CLASSPATH;
-        }
 
+    public DictionaryStemFilterFactory(Map<String,String> args) {
+        super(args);
+        assureMatchVersion();
+        dictionaryClassPath = get(args, "dictionaryClass", DEFAULT_DICTIONARY_CLASSPATH);
+        omitNumbers = getBoolean(args, "omitNumbers", true);
+    }
+
+    public void inform(ResourceLoader loader) throws IOException {
         String configDir = ((SolrResourceLoader)loader).getConfigDir();
         dictionary = ((SolrResourceLoader)loader).newInstance(dictionaryClassPath, Dictionary.class);
-        dictionary.init(args, configDir);
-        
+        dictionary.init(getOriginalArgs(), configDir);
+
         if (dictionary == null) {
             throw new IllegalArgumentException(String.format("Cannot find '%s' dictionary class", dictionaryClassPath));
-        }
-
-        String omitNumbers = args.get("omitNumbers");
-        if (omitNumbers != null && omitNumbers.equalsIgnoreCase("false")) {
-            this.omitNumbers = false;
         }
     }
 

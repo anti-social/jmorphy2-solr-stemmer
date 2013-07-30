@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.commons.io.input.SwappedDataInputStream;
 import org.apache.commons.codec.binary.Base64;
 
-import org.apache.noggit.JSONParser;
+import org.noggit.JSONParser;
 
 import com.uaprom.stemmer.Dictionary;
 

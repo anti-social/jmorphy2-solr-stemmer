@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
+import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -40,26 +42,30 @@ public class DictionaryStemFilterFactoryTest {
 
     public void test() throws IOException {
         SolrResourceLoader loader = new SolrResourceLoader(null);
-        DictionaryStemFilterFactory filterFactory = new DictionaryStemFilterFactory();
-        HashMap<String, String> params = new HashMap<String,String>();
+        Map<String, String> params = new HashMap<String,String>();
 
+        params.put("luceneMatchVersion", "LUCENE_43");
         params.put("dictionaryClass", "com.uaprom.stemmer.pymorphy2.Pymorphy2Dictionary");
         params.put("pymorphy2DBPath", "dict");
         params.put("pymorphy2Replaces", "replaces.json");
-        filterFactory.setLuceneMatchVersion(Version.LUCENE_40);
-        filterFactory.init(params);
+        DictionaryStemFilterFactory filterFactory = new DictionaryStemFilterFactory(params);
+        // filterFactory.setLuceneMatchVersion(Version.LUCENE_40);
+        // filterFactory.init(params);
         filterFactory.inform(loader);
         
-        WhitespaceTokenizerFactory tokenizerFactory = new WhitespaceTokenizerFactory();
-        tokenizerFactory.setLuceneMatchVersion(Version.LUCENE_40);
-        tokenizerFactory.init(new HashMap<String,String>());
+        Map<String, String> args = new HashMap<String,String>();
+        args.put("luceneMatchVersion", "LUCENE_43");
+        WhitespaceTokenizerFactory tokenizerFactory = new WhitespaceTokenizerFactory(args);
 
-        LowerCaseFilterFactory lowerCaseFactory = new LowerCaseFilterFactory();
-        lowerCaseFactory.setLuceneMatchVersion(Version.LUCENE_40);
-        lowerCaseFactory.init(new HashMap<String,String>());
+        args.put("luceneMatchVersion", "LUCENE_43");
+        WordDelimiterFilterFactory wordDelimiterFactory = new WordDelimiterFilterFactory(args);
+
+        args.put("luceneMatchVersion", "LUCENE_43");
+        LowerCaseFilterFactory lowerCaseFactory = new LowerCaseFilterFactory(args);
         
         Tokenizer tokenizer = tokenizerFactory.create(getTextReader(loader, "text.txt"));
-        TokenStream lowerCaseFilter = lowerCaseFactory.create(tokenizer);
+        TokenStream wordDelimiterFilter = wordDelimiterFactory.create(tokenizer);
+        TokenStream lowerCaseFilter = lowerCaseFactory.create(wordDelimiterFilter);
         TokenStream stemFilter = filterFactory.create(lowerCaseFilter);
 
         long startTime, endTime;

@@ -33,7 +33,7 @@
 
     <property name="main-test-class" value="com.uaprom.stemmer.DictionaryStemFilterFactoryTest"/>
 
-    <property name="lib.dir"     value="lib"/>
+    <property name="lib.dir" value="lib"/>
 
     <property name="solr.home" value="solr"/>
     
@@ -96,7 +96,7 @@
     <target name="test" depends="jar-test">
         <java fork="true" classname="${main-test-class}">
             <jvmarg line="-Xdebug"/>
-            <jvmarg line="-Djava.util.logging.config.file=logging.properties"/>
+            <jvmarg line="-Dlog4j.configuration=file:///${basedir}/log4j.properties"/>
             <jvmarg line="-Dsolr.solr.home=${solr.home}"/>
             <classpath>
                 <path refid="test.classpath"/>
