@@ -6,8 +6,6 @@ import java.util.ArrayList;
 
 
 abstract public class Dictionary {
-    abstract public void init(Map<String,String> args, String baseDir) throws IOException;
-
     abstract public ArrayList<String> getNormalForms(char[] word, int offset, int count) throws IOException;
 
     public ArrayList<String> getNormalForms(String word) throws IOException {

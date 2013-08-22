@@ -2,12 +2,14 @@ package com.uaprom.stemmer.pymorphy2;
 
 import java.io.File;
 import java.io.DataInput;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,28 +42,20 @@ public class Pymorphy2Dictionary extends Dictionary {
     private static final String SUFFIXES_FILENAME = "suffixes.json";
     private static final String LEMMA_PREFIXES_FILENAME = "lemma-prefixes.json";
 
-    @Override
-    public void init(Map<String,String> args, String baseDir) throws IOException {
-        String dbPath = args.get("pymorphy2DBPath");
-        if (dbPath == null) {
-            dbPath = "dict";
-        }
-        dbPath = baseDir + dbPath;
-        
-        dawg = new DAWG(new File(dbPath, WORDS_FILENAME));
+    public Pymorphy2Dictionary(InputStream dawgStream, InputStream paradigmsStream, InputStream suffixesStream, InputStream lemmaPrefixesStream, InputStream replacesStream) throws IOException {
+        dawg = new DAWG(dawgStream);
 
-        loadParadigms(new File(dbPath, PARADIGMS_FILENAME));
-        loadSuffixes(new File(dbPath, SUFFIXES_FILENAME));
-        loadLemmaPrefixes(new File(dbPath, LEMMA_PREFIXES_FILENAME));
+        loadParadigms(paradigmsStream);
+        loadSuffixes(suffixesStream);
+        loadLemmaPrefixes(lemmaPrefixesStream);
 
-        String replacesFilename = args.get("pymorphy2Replaces");
-        if (replacesFilename != null) {
-            loadReplaceChars(new File(baseDir, replacesFilename));
+        if (replacesStream != null) {
+            loadReplaceChars(replacesStream);
         }
     }
 
-    private void loadParadigms(File file) throws IOException {
-        DataInput paradigmsStream = new SwappedDataInputStream(new FileInputStream(file));
+    private void loadParadigms(InputStream stream) throws IOException {
+        DataInput paradigmsStream = new SwappedDataInputStream(stream);
         short paradigmsCount = paradigmsStream.readShort();
         paradigms = new ArrayList<Paradigm>(paradigmsCount);
         for (int paraId = 0; paraId < paradigmsCount; paraId++) {
@@ -69,11 +63,11 @@ public class Pymorphy2Dictionary extends Dictionary {
         }
     }
 
-    private String[] readJsonStrings(File file) throws IOException {
+    private String[] readJsonStrings(InputStream stream) throws IOException {
         ArrayList<String> stringList = new ArrayList<String>();
         String[] stringArray;
 
-        JSONParser parser = new JSONParser(new FileReader(file));
+        JSONParser parser = new JSONParser(new BufferedReader(new InputStreamReader(stream)));
         int event;
         while ((event = parser.nextEvent()) != JSONParser.EOF) {
             if (event == JSONParser.STRING) {
@@ -85,18 +79,18 @@ public class Pymorphy2Dictionary extends Dictionary {
         return stringList.toArray(stringArray);
     }
 
-    private void loadSuffixes(File file) throws IOException {
-        suffixes = readJsonStrings(file);
+    private void loadSuffixes(InputStream stream) throws IOException {
+        suffixes = readJsonStrings(stream);
     }
 
-    private void loadLemmaPrefixes(File file) throws IOException {
-        lemmaPrefixes = readJsonStrings(file);
+    private void loadLemmaPrefixes(InputStream stream) throws IOException {
+        lemmaPrefixes = readJsonStrings(stream);
     }
 
-    private void loadReplaceChars(File file) throws IOException {
+    private void loadReplaceChars(InputStream stream) throws IOException {
         int i = 0;
         Character c = null;
-        for (String letter : readJsonStrings(file)) {
+        for (String letter : readJsonStrings(stream)) {
             if (i % 2 == 0) {
                 if (letter.length() != 1) {
                     throw new IOException(String.format("Replaceable string must contain only one character: '%s'", letter));
@@ -171,10 +165,14 @@ public class Pymorphy2Dictionary extends Dictionary {
         private DAWGDict dict;
         private Guide guide;
 
-        public DAWG(File file) throws IOException {
-            DataInput input = new SwappedDataInputStream(new BufferedInputStream(new FileInputStream(file)));
+        public DAWG(InputStream stream) throws IOException {
+            DataInput input = new SwappedDataInputStream(new BufferedInputStream(stream));
             dict = new DAWGDict(input);
             guide = new Guide(input);
+        }
+
+        public DAWG(File file) throws IOException {
+            this(new FileInputStream(file));
         }
 
         private ArrayList<FoundParadigm> similarItems(String key, Map<Character,String> replaceChars, String prefix, int index) throws IOException {

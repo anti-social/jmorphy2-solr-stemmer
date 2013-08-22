@@ -1,9 +1,7 @@
 package com.uaprom.stemmer;
 
-import java.io.File;
 import java.io.Reader;
 import java.io.IOException;
-import java.io.FileReader;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Map;
@@ -26,7 +24,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.uaprom.stemmer.DictionaryStemFilterFactory;
+import com.uaprom.stemmer.pymorphy2.Pymorphy2DictionaryStemFilterFactory;
 
 
 public class DictionaryStemFilterFactoryTest {
@@ -44,23 +42,22 @@ public class DictionaryStemFilterFactoryTest {
         SolrResourceLoader loader = new SolrResourceLoader(null);
         Map<String, String> params = new HashMap<String,String>();
 
-        params.put("luceneMatchVersion", "LUCENE_43");
-        params.put("dictionaryClass", "com.uaprom.stemmer.pymorphy2.Pymorphy2Dictionary");
-        params.put("pymorphy2DBPath", "dict");
-        params.put("pymorphy2Replaces", "replaces.json");
-        DictionaryStemFilterFactory filterFactory = new DictionaryStemFilterFactory(params);
+        params.put("luceneMatchVersion", "LUCENE_40");
+        params.put("db", "dict");
+        params.put("replaces", "replaces.json");
+        Pymorphy2DictionaryStemFilterFactory filterFactory = new Pymorphy2DictionaryStemFilterFactory(params);
         // filterFactory.setLuceneMatchVersion(Version.LUCENE_40);
         // filterFactory.init(params);
         filterFactory.inform(loader);
         
         Map<String, String> args = new HashMap<String,String>();
-        args.put("luceneMatchVersion", "LUCENE_43");
+        args.put("luceneMatchVersion", "LUCENE_40");
         WhitespaceTokenizerFactory tokenizerFactory = new WhitespaceTokenizerFactory(args);
 
-        args.put("luceneMatchVersion", "LUCENE_43");
+        args.put("luceneMatchVersion", "LUCENE_40");
         WordDelimiterFilterFactory wordDelimiterFactory = new WordDelimiterFilterFactory(args);
 
-        args.put("luceneMatchVersion", "LUCENE_43");
+        args.put("luceneMatchVersion", "LUCENE_40");
         LowerCaseFilterFactory lowerCaseFactory = new LowerCaseFilterFactory(args);
         
         Tokenizer tokenizer = tokenizerFactory.create(getTextReader(loader, "text.txt"));
