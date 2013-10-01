@@ -270,7 +270,7 @@ public class Pymorphy2Dictionary extends Dictionary {
                 return false;
             }
             
-            return true;
+            return hasValue(index);
         }
 
         public int followBytes(byte[] key, int index) {
